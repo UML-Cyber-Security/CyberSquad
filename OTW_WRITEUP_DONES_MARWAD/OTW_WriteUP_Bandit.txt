@@ -1,0 +1,149 @@
+*************************************************************************************
+Level 0: Jaelyn & Justin
+
+    For this level of Bandit, there was not much to it. The webpage
+    on OverTheWire gave the hostname to connect to, bandit.labs.overthewire.org,
+    the port number, -p 2220, the username, bandit0, and the first password 
+    to move onwards to the first level, which was also bandit0.
+
+
+*************************************************************************************
+
+Level 1: Jaelyn & Justin
+
+    For this level of Bandit, the password was stored in a file called - located in the
+    home directory. To access this, as cat - was not going to work as intended, we decided to use 
+    an escape sequence along with cat to read the file.
+    In the process of this level, Jaelyn also discovered that the exit command actually works in the
+    Linux terminal, as apposed to using PuttY on Windows, to exit out of the current Bandit session
+    without having to reopen the window. 
+
+    Terminal:   bandit1@bandit:~$ cat ./-
+    Password:   CV1DtqXWVFXTvM2F0k09SHz0YwRINYA9
+
+*************************************************************************************
+
+Level 2: Jaelyn and Justin
+
+    For this level of Bandit, the password was stored in a file called "spaces in this filename",
+    which was located in the home directory. Similar to the previous level, Justin suggested we use
+    escape sequences to escape the filename so that we could use cat with it. Tried initially
+    with / as an escape sequence (from going back and forth between Linux and Windows). Learned in
+    the process that we could just have the line autofilled with the correct direction slash
+    by typing in an 's' and then using tab since it was the only file that met this specific criteria
+    in the home directory. 
+
+    Terminal:   bandit2@bandit:~$ cat spaces\ in\ this\ filename
+    Password:   UmHadQclWmgdLOKQ3YNgjWxGoRMb5luK
+
+*************************************************************************************
+
+Level 3: Jaelyn & Justin 
+
+    For this level of Bandit, the password was stored in a hidden file in the "inhere" 
+    directory. Using normal ls would not reveal the file, however, ls -a shows all files in
+    a directory, even hidden ones. The file itself was then able to be read by using cat.
+
+    Terminal:   bandit3@bandit:~$ ls -a
+                bandit3@bandit:~$ cat .hidden
+    Password:   pIwrPrtPN36QITSp3EQaw936yaFoFgAB
+
+*************************************************************************************
+
+Level 4: Jaelyn
+
+    For this level of Bandit, the password was stored in the only human-readable file in
+    the "inhere" directory. I first used cd to enter the directory and used cat ./-file0*
+    to view the contents of all of the nine files in the directory. The password was seemingly in
+    plain sight, being the only contiguous string of readable characters in the result. To 
+    double check my work, I checked file seven specifically and found that there was an additional
+    character that I thought was a part of the password but actually was a part of file 6.
+
+    Terminal:   bandit4@bandit:~$ cat ./-file0*
+                bandit4@bandit:~$ cat ./-file07
+    Password:   koReBOKuIDDepwhWk7jZC0RTdopnAYKh
+
+
+*************************************************************************************
+
+Level 5: Jaelyn
+
+    For this level of Bandit, the password was stored again in the "inhere" directory
+    and the file it was contained in had all of the following properties: it was human-readable, 
+    1033 bytes in size, and not executable. I researched the size parameters that could be used
+    and realized that I could use find with -size 1033c (the c specifying bytes).
+
+    Terminal:   bandit5@bandit:~$ find -size 1033c
+                bandit5@bandit:~$ cat ./.file2
+
+*************************************************************************************
+
+Level 6: Justin
+
+//TO BE COMPLETED
+*************************************************************************************
+
+Level 7: Jaelyn 
+
+    For this level of Bandit, the password was stored in a file called data.txt next 
+    to the word millionth. Upon opening data.txt, the screen became flooded with seemingly
+    every entry in the dictionary, randomly sorted, with each word having its verb, noun, past tense, 
+    and present tense forms. I decided to search for how to use grep more efficiently, and toyed
+    with sort as well. Since there was a beefy amount of input, I wanted to use grep to get
+    specific data and sort so that the results of the call would be in alphabetic order. 
+    I initially tried grep -E'bm data.txt | sort because I was under the impression from the 
+    documentation I was reading that I could only find words this way by searching for a single 
+    character. The result of this command led to my screen being flooded with solely 'm'
+    words, however, I wanted a more efficient way of finding the password.
+    I ended up piping grep with sort like I had, but instead of just an 'm', I typed in
+    'million'. This gave me only seven entries, with millionth being the sixth. 
+
+    Terminal:   bandit7@bandit:~$ grep -E '\bmillion' data.txt | sort
+    Password:   cvX2JJa4CFALtqS87jk27qwqGhBM9plV
+
+
+*************************************************************************************
+
+Level 8: Jaelyn 
+
+    For this level of Bandit, the password was stored in the file data.txt, and was the only 
+    line of text that occured only once. Upon opening the file, I was flooded like the previous level
+    with entries, all of which looked like potential passwords. I decided to look into the usage of uniq,
+    which would help me isolate the correct password. Origionally, I came up with the wrong password 
+    because uniq, as I learned, only looks at adjacent lines. I decided to solve this by piping with sort. 
+
+    Terminal:   bandit8@bandit:~$ sort data.txt | uniq -u
+    Password:   UsvVyFSfZZWbi6wgC7dAFyFuR6jQQUhR
+
+*************************************************************************************
+
+Level 9: Justin
+
+//TO BE COMPELTED
+*************************************************************************************
+
+Level 10: Justin
+
+//TO BE COMPELTED
+*************************************************************************************
+
+Level 11: Jaelyn 
+    For this level of Bandit, the password was stored in data.txt, where all lowercase
+    and uppercase letters were rotated by thirteen positions. This was the ROT13 cipher, 
+    which I could do by hand, however, I wanted an efficient way of making the terminal 
+    do all of the work for me. I researched more into tr, and found that you could do a ROT13
+    in using it. Origionally I tried doing tr '[N-ZA-M]' '[A-Z]'  which led to only the
+    uppercase characters getting rotated. To fix this, I piped it with the same command to 
+    handle the lowercase characters as well and baddabing, baddaboom, the password revealed 
+    itself.
+
+    Terminal:   bandit11@bandit:~$ echo 'Gur cnffjbeq vf 5Gr8L4qetPEsPk8htqjhRK8XSP6x2RHh' | tr '[N-ZA-M]' '[A-Z]' | tr '[a-z]' '[n-za-m]'
+    Password:   5Te8Y4drgCRfCx8ugdwuEX8KFC6k2EUu
+
+
+*************************************************************************************
+
+Level 12: Justin
+
+//TO BE COMPELTED
+*************************************************************************************
