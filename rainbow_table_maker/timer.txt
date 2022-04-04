@@ -1,0 +1,1 @@
+Hash-Crack took 0.21813201904296875 seconds      at 15:52:20 (type=unsalted, status=complete)

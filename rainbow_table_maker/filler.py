@@ -101,6 +101,8 @@ def main():
         numUsers = populate_encrypted()
         end = time.time()
       print(f'populated {type} table of {numUsers} users in {time_formater(end-start)}')
+      with open('reportfile.txt', 'a') as report:
+        report.write(f'{type}'.ljust(10)+f'{end-start}\n')
       return
   print(f'{sys.argv[1]} is an unknwon command, try "python3 filler.py help" for more options')
   return
@@ -163,7 +165,7 @@ def populate_salted():
   for i, usr in enumerate(table):
     username, password = usr
     hasher.log_new_user_salted(username, password)
-    print(f'Added {i+1} of {size} salted users {round((i+1)/size,1)}% complete',end='\r')
+    print(f'Added {i+1} of {size} salted users {round((i+1)/size*100,1)}% complete',end='\r')
   print('')
   return size
 
@@ -189,6 +191,7 @@ def populate_encrypted():
 
 
 def cleaner():
+  open('reportfile.txt', 'w').close()
   files = [f for f in os.listdir('.') if   os.path.isfile(f)]
   counter = 0
   numfiles = len(files)

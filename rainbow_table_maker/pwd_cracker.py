@@ -1,6 +1,8 @@
 import string
+import os
 import sys
 import time
+import hasher
 from datetime import datetime
 LEGAL_LETTERS = string.ascii_lowercase + string.ascii_uppercase + string.digits
 
@@ -20,10 +22,22 @@ def main():
 
   if len(sys.argv) == 2 and sys.argv[1] == 'help':
     print('python3  pwd_cracker.py  <LEAKED_HASH_FILE:str>  <IS_SALTED:bool>  <FILE_NAME_OF_TEXT_FILE_CONTAINING_RAINBOW_TABLE_FILE_NAMES:str>  <OUTPUT_FILE:str>')
+    print('python3  pwd_cracker.py  <LEAKED_HASH-FL_DIRECTORY:str> <FILE_CONTAINING_RB-TBL-FL_NAMES:str> <OUTPUT_FILE:str>')
     return
   
-  if len(sys.argv) != 5:
-    print(f'Expected 4 args, recieved {len(sys.argv) - 1} args')
+  if len(sys.argv) != 5 and len(sys.argv) != 4:
+    print(f'Expected 3 or 4 args, recieved {len(sys.argv) - 1} args')
+    return
+  if len(sys.argv) != 4:
+    start = time.time()
+    solutions, status = crack_encrypted(groupEncryptedFiles(sys.argv[1]), rainbow_table_agrigator(sys.argv[2]))
+    write_solution(solutions, sys.argv[3])
+    end = time.time()
+    print(f'Time Elapsed: {time_formater(end - start)}                      ')
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
+    with open('timer.txt', 'a') as timer_file:
+      timer_file.write(f'Hash-Crack took {time_formater(end - start)}'.ljust(48)+f' at {current_time} (type=encrypted, status={status_formater(status)})\n')
     return
 
   start = time.time()
@@ -54,7 +68,7 @@ def bool_maker(sbool:str)->bool:
 
 def rainbow_table_agrigator(file_name)->list:
   with open(file_name, 'r') as file:
-    return [line for line in file.readlines() if not not line]
+    return [line[:-1] for line in file.readlines() if not not line]
 
 
 def salt_type(is_salted:bool)->str:
@@ -98,7 +112,7 @@ def crack_salted(shadow_file:str, rainbowtables:list, output_file:str) -> bool:
       continue
     with open(rainbowtables[i], 'r') as rainbowTable:
       cur_registry = registrar[i]
-      for line_number, line in eumerate(rainbowtable.readlines()):
+      for line_number, line in enumerate(rainbowTable.readlines()):
         for r_index, name, salt, hash in enumerate(cur_registry):
           if line[:-1] == hash:
             del cur_registry[r_index]
@@ -168,8 +182,6 @@ def tupler(regestry:list):
     print(f'Missing elements, expected 256, got {len(builder)}')
     print(builder)
   return builder
-    
-
   
 
 def salt_decoder(salt):
@@ -227,6 +239,75 @@ def force(condition:bool):
   if type(condition) != bool or not condition:
     print('conditions failed')
     quit()
+
+def crack_encrypted(file_tuples:list, rainbow_tables:list):
+  size = len(file_tuples)
+  failed = 0
+  solutions = []
+  print(f'cracked 0, failed 0 of {size} aprox 0% complete', end='\r')
+  for i, (username, sltFile, encFile) in enumerate(file_tuples):
+    index = getSaltIndex(sltFile)
+    if index == -1:
+      failed += 1
+      print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
+      continue
+    with open(encFile, 'rb') as binEncFile:
+      usrbytes = binEncFile.read()
+    with open(rainbow_tables[index], 'r') as rainbowTable:
+      rbLines = [line[:-1] for line in rainbowTable.readlines()]
+    cracked = False
+    for i, hash in enumerate(rbLines):
+      encbytes = hasher.encrypt_bytes(username.encode(), hash.encode())
+      if encbytes == usrbytes:
+        solutions.append(
+          (
+            username,
+            compute_password(i)
+          )
+        )
+        print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
+        cracked = True
+        break
+      if not cracked:
+        failed +=1
+        print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
+  print('')
+  return solutions, (failed == 0)
+      
+    
+def write_solution(solutions, output_file):
+  for username, password in solutions:
+    with open(output_file, 'a') as output:
+      output.write(f'{username}:{password}\n')
+      
+
+def getSaltIndex(slt_file):
+  possible_salts = [bytes([x]) for x in range(256)]
+  with open(slt_file, 'rb') as sfile:
+    slt = sfile.read()
+  for i, pSalt in enumerate(possible_salts):
+    if slt == pSalt:
+      return i
+  return -1
+
+
+def groupEncryptedFiles(dir):
+  files = []
+  for (dirpath, dirnames, filenames) in os.walk(dir):
+    files.extend(filenames)
+  return [
+    (
+      nameConverter(filename[:-4]), 
+      f'{dir}/{filename[-3:]}slt', 
+      f'{dir}/{filename}'
+    ) 
+    for filename in files 
+    if filename[-4:] == '.enc'
+  ]
+
+
+def nameConverter(filename):
+  return filename.replace('-','@') + '.com'
 
 
 if __name__ == '__main__':
