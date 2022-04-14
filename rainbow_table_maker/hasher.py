@@ -50,3 +50,8 @@ if __name__ == '__main__':
   if len(sys.argv) == 2 and sys.argv[1] == 'help':
     print('Hasher.py\nThis python file is made to hash and encrypt passwords and user data')
     print('This python file is not made not be run by the user, but instead to be used as a helper file')
+
+def encrypt_bytes_from(orgBytes, encryption_key):
+  key = base64.urlsafe_b64encode(encryption_key)
+  fer = Fernet(key)
+  return fer.encrypt(orgBytes)

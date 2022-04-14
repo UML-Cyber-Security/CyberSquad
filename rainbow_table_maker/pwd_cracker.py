@@ -28,7 +28,7 @@ def main():
   if len(sys.argv) != 5 and len(sys.argv) != 4:
     print(f'Expected 3 or 4 args, recieved {len(sys.argv) - 1} args')
     return
-  if len(sys.argv) != 4:
+  if len(sys.argv) == 4:
     start = time.time()
     solutions, status = crack_encrypted(groupEncryptedFiles(sys.argv[1]), rainbow_table_agrigator(sys.argv[2]))
     write_solution(solutions, sys.argv[3])
@@ -104,7 +104,6 @@ def crack_salted(shadow_file:str, rainbowtables:list, output_file:str) -> bool:
   registrar = tupler(shadow_vars)
   size = len(shadow_vars)
   counter = 0
-  fails = 0
   print(f'cracked {counter} of {size} aprox {round(counter / size * 100,2)}% complete', end='\r')
 
   for i in range(len(registrar)):
@@ -113,7 +112,7 @@ def crack_salted(shadow_file:str, rainbowtables:list, output_file:str) -> bool:
     with open(rainbowtables[i], 'r') as rainbowTable:
       cur_registry = registrar[i]
       for line_number, line in enumerate(rainbowTable.readlines()):
-        for r_index, name, salt, hash in enumerate(cur_registry):
+        for r_index, (name, salt, hash) in enumerate(cur_registry):
           if line[:-1] == hash:
             del cur_registry[r_index]
             with open(output_file, 'a') as out:
@@ -248,6 +247,7 @@ def crack_encrypted(file_tuples:list, rainbow_tables:list):
   for i, (username, sltFile, encFile) in enumerate(file_tuples):
     index = getSaltIndex(sltFile)
     if index == -1:
+      print(f'\n{index=}')
       failed += 1
       print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
       continue
@@ -256,21 +256,32 @@ def crack_encrypted(file_tuples:list, rainbow_tables:list):
     with open(rainbow_tables[index], 'r') as rainbowTable:
       rbLines = [line[:-1] for line in rainbowTable.readlines()]
     cracked = False
-    for i, hash in enumerate(rbLines):
-      encbytes = hasher.encrypt_bytes(username.encode(), hash.encode())
+    for iHash, hash in enumerate(rbLines):
+      hash = (hash[2:-1]).encode().decode(
+        'unicode_escape'
+      ).encode(
+        "raw_unicode_escape"
+      )
+      encbytes = hasher.encrypt_bytes_from(
+        username.encode(), 
+        hash
+      )
       if encbytes == usrbytes:
-        solutions.append(
-          (
-            username,
-            compute_password(i)
-          )
-        )
+        solutions.append((username,compute_password(iHash)))
         print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
         cracked = True
         break
-      if not cracked:
-        failed +=1
-        print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
+      else:
+        with open('failed.txt', 'a') as fout:
+          fout.write(f'{encbytes}\n')
+    if not cracked:
+      print(encbytes)
+      print(usrbytes)
+      print(type(encbytes))
+      print(type(usrbytes))
+      print(f'{index=}')
+      failed +=1
+      print(f'cracked {i - failed + 1}, failed {failed} of {size} aprox {round((i+1)/size*100,1)}% complete', end='\r')
   print('')
   return solutions, (failed == 0)
       
@@ -298,7 +309,7 @@ def groupEncryptedFiles(dir):
   return [
     (
       nameConverter(filename[:-4]), 
-      f'{dir}/{filename[-3:]}slt', 
+      f'{dir}/{filename[:-3]}slt', 
       f'{dir}/{filename}'
     ) 
     for filename in files 
